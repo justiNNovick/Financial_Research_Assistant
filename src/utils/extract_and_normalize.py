@@ -232,10 +232,46 @@ def parse_balance_sheet_from_pdf(pdf_path: str) -> Optional[pd.DataFrame]:
         return None
 
 # extracts date from filename
-def extract_as_of_date_from_filename(filename: str) -> Optional[str]:
+def extract_as_of_date_from_filename(pdf_path: str, ticker: str) -> Optional[str]:
+    import shutil
+
+    filename = os.path.basename(pdf_path)
     match = re.search(r'(\d{8})', filename)
     if match:
-        return datetime.strptime(match.group(1), "%Y%m%d").date().isoformat()
+        try:
+            return datetime.strptime(match.group(1), "%Y%m%d").date().isoformat()
+        except ValueError:
+            print(f"Invalid 8-digit date in filename: {filename}")
+
+    # Fallback: use TOC to extract "For the Fiscal Year Ended ..."
+    toc_page_idx = find_toc_page_index(pdf_path)
+    if toc_page_idx is not None:
+        with pdfplumber.open(pdf_path) as pdf:
+            text = pdf.pages[toc_page_idx].extract_text()
+            if text:
+                date_match = re.search(r"For the Fiscal Year Ended (.+?)\n", text)
+                if date_match:
+                    try:
+                        parsed = dateparser.parse(date_match.group(1).strip())
+                        if parsed:
+                            as_of_date = parsed.date().isoformat()
+                            date_str = parsed.strftime("%Y%m%d")
+                            print(f"Extracted date from TOC: {as_of_date}")
+
+                            # Standardize filename
+                            dir_path = os.path.dirname(pdf_path)
+                            new_filename = f"{ticker.lower()}-{date_str}.pdf"
+                            new_path = os.path.join(dir_path, new_filename)
+
+                            if os.path.basename(pdf_path) != new_filename:
+                                shutil.move(pdf_path, new_path)
+                                print(f"Renamed file: {filename} → {new_filename}")
+
+                            return as_of_date
+                    except Exception as e:
+                        print(f" Date parse failed: {e}")
+
+    print(f"Could not extract date for: {pdf_path}")
     return None
 
 # reshapes cleaned balance sheet into long format for storage
@@ -284,3 +320,4 @@ if __name__ == "__main__":
             print(f"\nCleaned Balance Sheet: {os.path.basename(pdf_path)}")
             print(df)
     """
+
