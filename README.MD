@@ -1,5 +1,5 @@
 #Description:
-#Run as a script ie: python -m main --clear_sql_database --clear_doc_store --ticker=GOOG --years_back=5
+#python -m main --clear_sql_database --clear_doc_store --make_csv --ticker=AAPL --years_back=5
 #This project extracts 10k filings from the SEC website. It saves them in pdf form and parses them to find their respective balance sheets. Normalized balance sheet data is saved to a sql database (persistantly). After this process is complete, a chatbot allows you to ask questions about the data; the chatbot uses sql and the existing database to run queries and answer the questions
 #You have the option to specify what company you would like to analyze, and how many years back you would like to see
 #You have the option to clear whatever was persistantly stored to the sql and pdf-document databases
@@ -20,12 +20,12 @@
 #gpt 4o is the used model
 
 
-#fix comments (add and remove weird characters)  !!!
-#change __main__ stuff in each file!!!
-#add type checking !!!!
 
 
 #To Do
+#improve extract_table_near_page function
+#make sure api doesn't get 1 more or 1 less pdf than input
+#augement the pdf file name immediately after downloading it
 #add tests (pytest)
 #remove redundant imports
 #add comments
